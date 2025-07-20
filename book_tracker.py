@@ -42,42 +42,32 @@ if st.session_state["show_message"]:
     st.session_state["show_message"] = ""
 
 # ---- 新規本登録 ----
-title = st.text_input("本のタイトル", key="title")
-total_pages = st.number_input("総ページ数", min_value=1, step=1, key="total_pages")
-author = st.text_input("著者名", key="author")
-publisher = st.text_input("出版社名", key="publisher")
+with st.form("add_book_form", clear_on_submit=True):
+    title = st.text_input("本のタイトル（必須）")
+    total_pages = st.number_input("総ページ数（必須）", min_value=1, step=1, value=1)
+    author = st.text_input("著者名")
+    publisher = st.text_input("出版社名")
+    # 日付欄は常に表示
+    purchase_date = st.date_input("購入日", value=None, min_value=None, max_value=None)
+    start_date = st.date_input("読書開始日", value=None, min_value=None, max_value=None)
+    submitted = st.form_submit_button("本を追加する")
 
-set_purchase = st.checkbox("購入日を入力する", key="set_purchase", value=False)
-if set_purchase:
-    purchase_date = st.date_input("購入日", key="purchase_date")
-else:
-    purchase_date = ""
-
-set_start = st.checkbox("読書開始日を入力する", key="set_start", value=False)
-if set_start:
-    start_date = st.date_input("読書開始日", key="start_date")
-else:
-    start_date = ""
-
-if st.button("本を追加する"):
-    if not title or not total_pages:
-        st.error("本のタイトルと総ページ数は必須です！")
-    else:
-        new_book = pd.DataFrame([{
-            "title": title,
-            "total_pages": total_pages,
-            "author": author,
-            "publisher": publisher,
-            "purchase_date": purchase_date if purchase_date else "",
-            "start_date": start_date if start_date else "",
-            "current_page": 0,
-            "status": "reading",
-            "finish_date": ""
-        }])
-        books = pd.concat([books, new_book], ignore_index=True)
-        save_books(books)
-        st.session_state["show_message"] = f"「{title}」を追加しました！"
-        st.rerun()
+if submitted:
+    new_book = pd.DataFrame([{
+        "title": title,
+        "total_pages": total_pages,
+        "author": author,
+        "publisher": publisher,
+        "purchase_date": purchase_date if purchase_date else "",
+        "start_date": start_date if start_date else "",
+        "current_page": 0,
+        "status": "reading",
+        "finish_date": ""
+    }])
+    books = pd.concat([books, new_book], ignore_index=True)
+    save_books(books)
+    st.session_state["show_message"] = f"「{title}」を追加しました！"
+    st.rerun()
 
 # ---- 読書中・読了本の分割 ----
 reading_books = books[books["status"] != "done"].reset_index(drop=True)
@@ -210,7 +200,6 @@ else:
                 with b2:
                     if st.button("削除", key=f"delete_{idx}"):
                         books_idx = reading_books.index[idx]
-                        # logsも削除
                         logs = load_logs()
                         logs = logs[logs["title"] != row['title']]
                         save_logs(logs)
